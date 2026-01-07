@@ -29,7 +29,8 @@ class Settings:
             client_id=None,
             tenant=None,
             authority_url=None,
-            resource=None):
+            resource=None,
+            cloud=None):
 
         # connector specific settings
         self.connector_id = connector_id
@@ -40,6 +41,9 @@ class Settings:
         self.api_definition = api_definition
         self.icon = icon
         self.script = script
+
+        # Cloud configuration (for national clouds)
+        self.cloud = cloud
 
         # PowerApps RP settings
         self.powerapps_url = powerapps_url or 'https://api.powerapps.com'

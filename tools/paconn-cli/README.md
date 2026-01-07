@@ -133,15 +133,138 @@ In the settings file, the following items are expected. If an option is missing 
 
 * `powerAppsApiVersion`: The API version to use for Power Apps. This parameter is optional and set to `2016-11-01` by default.
 
+## National Cloud Support
+
+The `paconn` CLI supports national clouds including GCC, GCC-High, and DoD environments. This section explains how to configure and use `paconn` with these clouds.
+
+### Supported Clouds
+
+| Cloud | Description | `--cloud` value |
+|-------|-------------|-----------------|
+| Commercial | Standard Azure commercial cloud (default) | `commercial` |
+| GCC | Government Community Cloud | `gcc` |
+| GCC-High | Government Community Cloud High | `gcchigh` |
+| DoD | Department of Defense | `dod` |
+| China | Azure China (21Vianet) | `china` |
+
+### App Registration Requirements
+
+For GCC, GCC-High, DoD, and China clouds, you must create your own Azure AD app registration. The default Azure CLI client ID only works for the commercial cloud.
+
+#### Creating an App Registration
+
+1. Sign in to the Azure portal for your cloud:
+   - Commercial: https://portal.azure.com
+   - GCC: https://portal.azure.com (with GCC tenant)
+   - GCC-High: https://portal.azure.us
+   - DoD: https://portal.azure.us (with DoD tenant)
+   - China: https://portal.azure.cn
+
+2. Navigate to **Azure Active Directory** > **App registrations** > **New registration**
+
+3. Configure the app registration:
+   - **Name**: `paconn-cli` (or your preferred name)
+   - **Supported account types**: "Accounts in this organizational directory only"
+   - **Redirect URI**: Leave blank (not required for device code flow)
+
+4. After creating the app, note the **Application (client) ID** - you'll need this for the `--clid` parameter
+
+5. Configure **Authentication** settings:
+   - Go to **Authentication** > **Advanced settings**
+   - Set **Allow public client flows** to **Yes**
+   - Click **Save**
+
+6. Configure **API permissions**:
+   - Go to **API permissions** > **Add a permission**
+   - Select **APIs my organization uses**
+   - Search for and select **PowerApps Service** (or the appropriate service for your cloud)
+   - Select **Delegated permissions**
+   - Add the following permissions:
+     - `User` (User impersonation)
+   - Click **Add permissions**
+   - Click **Grant admin consent** (requires admin privileges)
+
+#### Required API Permissions
+
+| Permission | Type | Description |
+|------------|------|-------------|
+| PowerApps Service / User | Delegated | Allows the app to access Power Platform on behalf of the user |
+
+### Using National Clouds
+
+#### Command Line
+
+Specify the cloud using the `--cloud` parameter:
+
+```bash
+# Login to GCC-High
+paconn login --cloud gcchigh --clid YOUR_CLIENT_ID --tenant YOUR_TENANT_ID
+
+# Download a connector from GCC
+paconn download --cloud gcc --clid YOUR_CLIENT_ID --tenant YOUR_TENANT_ID
+
+# Create a connector in DoD
+paconn create --cloud dod --clid YOUR_CLIENT_ID --tenant YOUR_TENANT_ID --api-prop apiProperties.json --api-def apiDefinition.swagger.json
+```
+
+#### Settings File
+
+You can also specify the cloud and authentication settings in a `settings.json` file:
+
+```json
+{
+  "connectorId": "CONNECTOR-ID",
+  "environment": "ENVIRONMENT-GUID",
+  "apiProperties": "apiProperties.json",
+  "apiDefinition": "apiDefinition.swagger.json",
+  "icon": "icon.png",
+  "cloud": "gcchigh",
+  "clientId": "YOUR-CLIENT-ID",
+  "tenant": "YOUR-TENANT-ID"
+}
+```
+
+Then run commands with the settings file:
+
+```bash
+paconn login -s settings.json
+paconn download -s settings.json
+```
+
+### Cloud Endpoints Reference
+
+| Cloud | Authority URL | PowerApps API | Flow API |
+|-------|--------------|---------------|----------|
+| Commercial | login.microsoftonline.com | api.powerapps.com | api.flow.microsoft.com |
+| GCC | login.microsoftonline.com | gov.api.powerapps.us | gov.api.flow.microsoft.us |
+| GCC-High | login.microsoftonline.us | high.api.powerapps.us | high.api.flow.microsoft.us |
+| DoD | login.microsoftonline.us | api.apps.appsplatform.us | api.flow.appsplatform.us |
+| China | login.chinacloudapi.cn | api.powerapps.cn | api.flow.microsoft.cn |
+
 ## Command-Line Operations
 
 ### Login
 
 Log in to Power Platform by running:
-   
+
 `paconn login`
 
+For national clouds, include the cloud and authentication parameters:
+
+`paconn login --cloud gcchigh --clid YOUR_CLIENT_ID --tenant YOUR_TENANT_ID`
+
 This command will ask you to log in using the device code login process. Follow the prompt for the log in. Service Principle authentication is not supported at this point. Please review [a customer workaround posted in the issues page](https://github.com/microsoft/PowerPlatformConnectors/issues/287).
+
+```
+Arguments
+   --cloud -cl    : The cloud environment (commercial, gcc, gcchigh, dod, china).
+   --clid -i      : The client ID. Required for non-commercial clouds.
+   --tenant -t    : The tenant ID. Required for non-commercial clouds.
+   --authority_url -a : Authority URL for login (auto-set based on cloud).
+   --resource -r  : Resource URL for login (auto-set based on cloud).
+   --settings -s  : A settings file containing required parameters.
+   --force -f     : Override a previous login, if exists.
+```
 
 ### Logout
 
@@ -171,6 +294,7 @@ All the arguments can be also specified using a [settings.json file](#settings-f
 
 ```
 Arguments
+   --cloud -cl    : The cloud environment (commercial, gcc, gcchigh, dod, china).
    --cid -c       : The custom connector ID.
    --dest -d      : Destination directory.
    --env -e       : Power Platform environment GUID.
@@ -178,7 +302,7 @@ Arguments
    --pau -u       : Power Platform URL.
    --pav -v       : Power Platform API version.
    --settings -s  : A settings file containing required parameters.
-                    When a settings file is specified some command 
+                    When a settings file is specified some command
                     line parameters are ignored.
 ```
 
@@ -200,6 +324,7 @@ When the environment isn't specified, the command will prompt for it. However, t
 
 ```
 Arguments
+   --cloud -cl   : The cloud environment (commercial, gcc, gcchigh, dod, china).
    --api-def     : Location for the Open API definition JSON document.
    --api-prop    : Location for the API properties JSON document.
    --env -e      : Power Platform environment GUID.
@@ -209,7 +334,7 @@ Arguments
    --pav -v      : Power Platform API version.
    --secret -r   : The OAuth2 client secret for the connector.
    --settings -s : A settings file containing required parameters.
-                   When a settings file is specified some command 
+                   When a settings file is specified some command
                    line parameters are ignored.
 ```
 ### Update an Existing Custom Connector
@@ -230,6 +355,7 @@ When environment or connector ID isn't specified, the command will prompt for th
   
 ```
 Arguments
+   --cloud -cl   : The cloud environment (commercial, gcc, gcchigh, dod, china).
    --api-def     : Location for the Open API definition JSON document.
    --api-prop    : Location for the API properties JSON document.
    --cid -c      : The custom connector ID.
@@ -240,9 +366,9 @@ Arguments
    --pav -v      : Power Platform API version.
    --secret -r   : The OAuth2 client secret for the connector.
    --settings -s : A settings file containing required parameters.
-                   When a settings file is specified some command 
+                   When a settings file is specified some command
                    line parameters are ignored.
-   ```
+```
 
 ### Validate a Swagger JSON
 
@@ -258,13 +384,14 @@ The command will print the error, warning, or success message depending result o
   
 ```
 Arguments
+   --cloud -cl   : The cloud environment (commercial, gcc, gcchigh, dod, china).
    --api-def     : Location for the Open API definition JSON document.
    --pau -u      : Power Platform URL.
    --pav -v      : Power Platform API version.
    --settings -s : A settings file containing required parameters.
-                   When a settings file is specified some command 
+                   When a settings file is specified some command
                    line parameters are ignored.
-   ```
+```
 
 
 ### Best Practice

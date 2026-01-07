@@ -10,10 +10,15 @@ CLI parameter definitions
 
 from knack.arguments import ArgumentsContext
 from paconn import _LOGIN, _DOWNLOAD, _CREATE, _UPDATE, _VALIDATE, _CONVERT
+from paconn.settings.clouds import get_cloud_names
 
 CLIENT_SECRET = 'client_secret'
 CLIENT_SECRET_OPTIONS = ['--secret', '-r']
 CLIENT_SECRET_HELP = 'The OAuth2 client secret for the connector.'
+
+CLOUD = 'cloud'
+CLOUD_OPTIONS = ['--cloud', '-cl']
+CLOUD_HELP = 'The cloud environment to use. Valid values: ' + ', '.join(get_cloud_names()) + '. Default: commercial.'
 
 ENVIRONMENT = 'environment'
 ENVIRONMENT_OPTIONS = ['--env', '-e']
@@ -67,29 +72,35 @@ def load_arguments(self, command):
     """
     with ArgumentsContext(self, _LOGIN) as arg_context:
         arg_context.argument(
+            CLOUD,
+            options_list=CLOUD_OPTIONS,
+            type=str,
+            required=False,
+            help=CLOUD_HELP)
+        arg_context.argument(
             'client_id',
             options_list=['--clid', '-i'],
             type=str,
             required=False,
-            help='The client ID.')
+            help='The client ID. Required for GCC, GCC-High, DoD, and China clouds.')
         arg_context.argument(
             'tenant',
             options_list=['--tenant', '-t'],
             type=str,
             required=False,
-            help='The tenant.')
+            help='The tenant ID. Required for GCC, GCC-High, DoD, and China clouds.')
         arg_context.argument(
             'authority_url',
             options_list=['--authority_url', '-a'],
             type=str,
             required=False,
-            help='Authority URL for login.')
+            help='Authority URL for login. Automatically set based on cloud selection.')
         arg_context.argument(
             'resource',
             options_list=['--resource', '-r'],
             type=str,
             required=False,
-            help='Resource URL for login.')
+            help='Resource URL for login. Automatically set based on cloud selection.')
         arg_context.argument(
             SETTINGS,
             options_list=SETTINGS_OPTIONS,
@@ -107,6 +118,12 @@ def load_arguments(self, command):
             help='Override a previous login, if exists.')
 
     with ArgumentsContext(self, _DOWNLOAD) as arg_context:
+        arg_context.argument(
+            CLOUD,
+            options_list=CLOUD_OPTIONS,
+            type=str,
+            required=False,
+            help=CLOUD_HELP)
         arg_context.argument(
             ENVIRONMENT,
             options_list=ENVIRONMENT_OPTIONS,
@@ -154,6 +171,12 @@ def load_arguments(self, command):
             help='Overwrite all the existing connector and settings files.')
 
     with ArgumentsContext(self, _CREATE) as arg_context:
+        arg_context.argument(
+            CLOUD,
+            options_list=CLOUD_OPTIONS,
+            type=str,
+            required=False,
+            help=CLOUD_HELP)
         arg_context.argument(
             ENVIRONMENT,
             options_list=ENVIRONMENT_OPTIONS,
@@ -220,6 +243,12 @@ def load_arguments(self, command):
 
     with ArgumentsContext(self, _UPDATE) as arg_context:
         arg_context.argument(
+            CLOUD,
+            options_list=CLOUD_OPTIONS,
+            type=str,
+            required=False,
+            help=CLOUD_HELP)
+        arg_context.argument(
             ENVIRONMENT,
             options_list=ENVIRONMENT_OPTIONS,
             type=str,
@@ -281,6 +310,12 @@ def load_arguments(self, command):
             help=SETTINGS_HELP)
 
     with ArgumentsContext(self, _VALIDATE) as arg_context:
+        arg_context.argument(
+            CLOUD,
+            options_list=CLOUD_OPTIONS,
+            type=str,
+            required=False,
+            help=CLOUD_HELP)
         arg_context.argument(
             API_DEFINITION,
             options_list=API_DEFINITION_OPTIONS,

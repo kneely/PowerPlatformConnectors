@@ -12,12 +12,14 @@ from paconn import _DOWNLOAD
 from paconn.common.util import display
 from paconn.settings.util import load_powerapps_and_flow_rp
 from paconn.settings.settingsbuilder import SettingsBuilder
+from paconn.settings.clouds import apply_cloud_config
 
 import paconn.operations.download
 
 
 # pylint: disable=too-many-arguments
 def download(
+        cloud,
         environment,
         connector_id,
         destination,
@@ -39,6 +41,10 @@ def download(
         connector_id=connector_id,
         powerapps_url=powerapps_url,
         powerapps_version=powerapps_version)
+
+    # Apply cloud configuration (CLI argument takes precedence over settings file)
+    effective_cloud = cloud or settings.cloud
+    apply_cloud_config(settings, effective_cloud)
 
     powerapps_rp, _ = load_powerapps_and_flow_rp(
         settings=settings,

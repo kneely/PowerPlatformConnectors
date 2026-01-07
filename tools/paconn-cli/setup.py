@@ -9,7 +9,7 @@
 import os
 from setuptools import setup
 
-__VERSION__ = '0.0.21'
+__VERSION__ = '0.0.22'
 
 
 def read(fname):
@@ -33,11 +33,14 @@ setup(
         'Environment :: Console',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6'
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12'
     ],
-    keywords='azure, powerapps, flow, power platform, connectors',
-    python_requires='>=3.5,<4',
+    keywords='azure, powerapps, flow, power platform, connectors, gcc, gcchigh, dod, national cloud',
+    python_requires='>=3.8,<4',
     packages=[
         'paconn',
         'paconn.apimanager',
@@ -52,18 +55,16 @@ setup(
         'docutils',
         'flake8',
         'future',
-        'knack~=0.5.1',
+        'knack>=0.5.1',
         'pytest',
         'pytest-xdist',
         'virtualenv',
         'requests',
-        'adal',
-        'msrestazure',
-        'azure-storage-blob>=2.1,<12.0'
+        'msal>=1.20.0',
+        'azure-storage-blob>=12.0.0'
     ],
     extras_require={
-        ":python_version<'3.0'": ['pylint~=1.9.2'],
-        ":python_version>='3.0'": ['pylint~=2.0.0']
+        'dev': ['pylint>=2.0.0']
     },
     package_data={'paconn.config': ['*.*']},
     include_package_data=True,

@@ -10,12 +10,16 @@ Login command.
 from paconn.authentication.auth import get_authentication
 from paconn.common.util import display
 from paconn.settings.settingsbuilder import SettingsBuilder
+from paconn.settings.clouds import apply_cloud_config, validate_cloud_settings
 
 
-def login(client_id, tenant, authority_url, resource, settings_file, force):
+def login(cloud, client_id, tenant, authority_url, resource, settings_file, force):
     """
     Login command.
     """
+    # Validate cloud settings before proceeding
+    validate_cloud_settings(cloud, client_id, tenant)
+
     # Get settings
     settings = SettingsBuilder.get_authentication_settings(
         settings_file=settings_file,
@@ -23,6 +27,9 @@ def login(client_id, tenant, authority_url, resource, settings_file, force):
         tenant=tenant,
         authority_url=authority_url,
         resource=resource)
+
+    # Apply cloud configuration
+    apply_cloud_config(settings, cloud)
 
     get_authentication(
         settings=settings,

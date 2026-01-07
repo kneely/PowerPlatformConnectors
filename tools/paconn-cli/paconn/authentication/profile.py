@@ -5,17 +5,17 @@
 # -----------------------------------------------------------------------------
 
 """
-User profile management class.`
+User profile management class using MSAL (Microsoft Authentication Library).
 """
-import adal
+import msal
+import time
 from urllib.parse import urljoin
-# AADTokenCredentials for multi-factor authentication
-from msrestazure.azure_active_directory import AADTokenCredentials
 
 
 class Profile:
     """
     A Class representing user profile.
+    Uses MSAL for authentication with support for national clouds.
     """
 
     def __init__(self, client_id, tenant, resource, authority_url):
@@ -24,32 +24,75 @@ class Profile:
         self.resource = resource
         self.authority_url = authority_url
 
-    def _get_authentication_context(self):
-        auth_url = urljoin(self.authority_url, self.tenant)
+    def _get_authority(self):
+        """
+        Construct the full authority URL.
+        """
+        return urljoin(self.authority_url, self.tenant)
 
-        return adal.AuthenticationContext(
-            authority=auth_url,
-            api_version=None)
+    def _get_scopes(self):
+        """
+        Get the scopes for the resource.
+        MSAL uses scopes instead of resource. The default scope is {resource}/.default
+        """
+        # Remove trailing slash if present for scope construction
+        resource = self.resource.rstrip('/')
+        return [f"{resource}/.default"]
+
+    def _create_public_client_app(self):
+        """
+        Create a PublicClientApplication for device code flow.
+        """
+        return msal.PublicClientApplication(
+            client_id=self.client_id,
+            authority=self._get_authority()
+        )
 
     def authenticate_device_code(self):
         """
         Authenticate the end-user using device auth.
+        Returns a token dictionary compatible with the existing tokenmanager.
         """
-        context = self._get_authentication_context()
+        app = self._create_public_client_app()
+        scopes = self._get_scopes()
 
-        code = context.acquire_user_code(
-            resource=self.resource,
-            client_id=self.client_id)
+        # Initiate device code flow
+        flow = app.initiate_device_flow(scopes=scopes)
 
-        print(code['message'])
+        if 'user_code' not in flow:
+            raise ValueError(
+                f"Failed to initiate device flow: {flow.get('error_description', 'Unknown error')}"
+            )
 
-        mgmt_token = context.acquire_token_with_device_code(
-            resource=self.resource,
-            user_code_info=code,
-            client_id=self.client_id)
+        # Display the message to user
+        print(flow['message'])
 
-        credentials = AADTokenCredentials(
-            token=mgmt_token,
-            client_id=self.client_id)
+        # Wait for user to authenticate
+        result = app.acquire_token_by_device_flow(flow)
 
-        return credentials.token
+        if 'access_token' not in result:
+            error_desc = result.get('error_description', result.get('error', 'Unknown error'))
+            raise ValueError(f"Authentication failed: {error_desc}")
+
+        # Convert MSAL token format to the format expected by tokenmanager
+        # MSAL returns expires_in (seconds from now), we need expires_on (timestamp)
+        expires_in = result.get('expires_in', 3600)
+        expires_on = time.time() + expires_in
+
+        credentials = {
+            'token_type': result.get('token_type', 'Bearer'),
+            'access_token': result['access_token'],
+            'expires_on': expires_on,
+            'refresh_token': result.get('refresh_token'),
+            'id_token': result.get('id_token'),
+            'client_id': self.client_id,
+            'resource': self.resource,
+            'authority_url': self.authority_url,
+            'tenant': self.tenant
+        }
+
+        # Extract oid from id_token_claims if available
+        if 'id_token_claims' in result:
+            credentials['oid'] = result['id_token_claims'].get('oid')
+
+        return credentials
