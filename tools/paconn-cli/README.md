@@ -194,17 +194,23 @@ For GCC, GCC-High, DoD, and China clouds, you must create your own Azure AD app 
 
 #### Command Line
 
-Specify the cloud using the `--cloud` parameter:
+Specify the cloud using the `--cloud` parameter during login. The cloud configuration is cached, so subsequent commands automatically use the same cloud:
 
 ```bash
-# Login to GCC-High
+# Login to GCC-High (only need to specify cloud, clid, tenant once)
 paconn login --cloud gcchigh --clid YOUR_CLIENT_ID --tenant YOUR_TENANT_ID
 
-# Download a connector from GCC
-paconn download --cloud gcc --clid YOUR_CLIENT_ID --tenant YOUR_TENANT_ID
+# Subsequent commands automatically use the cached cloud settings
+paconn download
+paconn create --api-prop apiProperties.json --api-def apiDefinition.swagger.json
+paconn update --api-prop apiProperties.json --api-def apiDefinition.swagger.json
+```
 
-# Create a connector in DoD
-paconn create --cloud dod --clid YOUR_CLIENT_ID --tenant YOUR_TENANT_ID --api-prop apiProperties.json --api-def apiDefinition.swagger.json
+You can override the cached cloud setting by specifying `--cloud` on any command:
+
+```bash
+# Override to use a different cloud for this command only
+paconn download --cloud gcc
 ```
 
 #### Settings File

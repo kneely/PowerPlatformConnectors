@@ -14,6 +14,7 @@ from paconn.settings.util import load_powerapps_and_flow_rp
 from paconn.operations.upsert import upsert
 from paconn.settings.settingsbuilder import SettingsBuilder
 from paconn.settings.clouds import apply_cloud_config
+from paconn.authentication.auth import get_cached_auth_settings
 
 
 # pylint: disable=too-many-arguments
@@ -32,6 +33,9 @@ def create(
     """
     Create command.
     """
+    # Get cached auth settings from login
+    cached_settings = get_cached_auth_settings()
+
     # Get settings
     settings = SettingsBuilder.get_settings(
         environment=environment,
@@ -44,8 +48,8 @@ def create(
         powerapps_url=powerapps_url,
         powerapps_version=powerapps_version)
 
-    # Apply cloud configuration (CLI argument takes precedence over settings file)
-    effective_cloud = cloud or settings.cloud
+    # Apply cloud configuration (CLI argument > settings file > cached login)
+    effective_cloud = cloud or settings.cloud or cached_settings.get('cloud')
     apply_cloud_config(settings, effective_cloud)
 
     powerapps_rp, _ = load_powerapps_and_flow_rp(

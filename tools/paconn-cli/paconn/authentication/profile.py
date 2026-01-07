@@ -18,11 +18,12 @@ class Profile:
     Uses MSAL for authentication with support for national clouds.
     """
 
-    def __init__(self, client_id, tenant, resource, authority_url):
+    def __init__(self, client_id, tenant, resource, authority_url, cloud=None):
         self.client_id = client_id
         self.tenant = tenant
         self.resource = resource
         self.authority_url = authority_url
+        self.cloud = cloud
 
     def _get_authority(self):
         """
@@ -88,7 +89,8 @@ class Profile:
             'client_id': self.client_id,
             'resource': self.resource,
             'authority_url': self.authority_url,
-            'tenant': self.tenant
+            'tenant': self.tenant,
+            'cloud': self.cloud
         }
 
         # Extract oid from id_token_claims if available

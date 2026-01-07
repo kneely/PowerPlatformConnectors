@@ -33,5 +33,6 @@ def login(cloud, client_id, tenant, authority_url, resource, settings_file, forc
 
     get_authentication(
         settings=settings,
-        force_authenticate=force)
+        force_authenticate=force,
+        cloud=cloud)
     display('Login successful.')
